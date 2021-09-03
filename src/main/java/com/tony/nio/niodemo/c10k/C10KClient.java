@@ -18,12 +18,12 @@ public class C10KClient {
             try {
                 SocketChannel client1 = SocketChannel.open();
                 SocketChannel client2 = SocketChannel.open();
-                client1.bind(new InetSocketAddress("192.168.150.1", i));
+                client1.bind(new InetSocketAddress("192.168.62.1", i));
                 //  192.168.150.1：10000   192.168.150.11：9090
                 client1.connect(serverAddr);
                 clients.add(client1);
 
-                client2.bind(new InetSocketAddress("192.168.110.100", i));
+                client2.bind(new InetSocketAddress("10.152.100.39", i));
                 //  192.168.110.100：10000  192.168.150.11：9090
                 client2.connect(serverAddr);
                 clients.add(client2);
