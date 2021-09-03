@@ -18,13 +18,6 @@ public class C10KClient {
             try {
                 SocketChannel client1 = SocketChannel.open();
                 SocketChannel client2 = SocketChannel.open();
-
-                /*
-                linux中你看到的连接就是：
-                client...port: 10508
-                client...port: 10508
-                 */
-
                 client1.bind(new InetSocketAddress("192.168.150.1", i));
                 //  192.168.150.1：10000   192.168.150.11：9090
                 client1.connect(serverAddr);
@@ -34,15 +27,11 @@ public class C10KClient {
                 //  192.168.110.100：10000  192.168.150.11：9090
                 client2.connect(serverAddr);
                 clients.add(client2);
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-
         }
-        System.out.println("clients " + clients.size());
-
+        System.out.println("clients:" + clients.size());
         try {
             System.in.read();
         } catch (IOException e) {
