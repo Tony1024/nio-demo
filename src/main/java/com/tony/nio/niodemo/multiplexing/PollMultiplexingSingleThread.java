@@ -99,7 +99,7 @@ public class PollMultiplexingSingleThread {
              */
             client.register(selector, SelectionKey.OP_READ, buffer);
             System.out.println("-------------------------------------------");
-            System.out.println("新客户端：" + client.getRemoteAddress());
+            System.out.println("Client connect:" + client.getRemoteAddress());
             System.out.println("-------------------------------------------");
 
         } catch (IOException e) {

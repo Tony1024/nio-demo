@@ -115,7 +115,7 @@ public class EpollMultiplexingSingleThread {
             // 为什么不注册写事件？那到底什么时候注册写事件
 //            client.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, buffer);
             System.out.println("-------------------------------------------");
-            System.out.println("新客户端：" + client.getRemoteAddress());
+            System.out.println("Client connect:" + client.getRemoteAddress());
             System.out.println("-------------------------------------------");
         } catch (IOException e) {
             e.printStackTrace();
