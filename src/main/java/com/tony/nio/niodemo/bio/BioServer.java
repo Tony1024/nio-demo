@@ -13,6 +13,8 @@ public class BioServer {
         ServerSocket server = new ServerSocket(9090, 20);
         System.out.println("step1: new ServerSocket(9090)");
         while (true) {
+            // 故意卡住
+            System.in.read();
             // 阻塞1
             Socket client = server.accept();
             System.out.println("step2:client:" + client.getPort());

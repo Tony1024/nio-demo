@@ -28,12 +28,13 @@ public class EpollMultiplexingSingleThread {
             selector = Selector.open();
             // 此时server处于listen状态，listen状态的文件描述符为fd4
 
-            /*
+            server.register(selector, SelectionKey.OP_ACCEPT);
+            System.out.println("register success");
+            /* 懒加载
             register
             epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
             epoll_ctl(fd3,EPOLL_CTL_ADD,fd4,EPOLLIN)
              */
-            server.register(selector, SelectionKey.OP_ACCEPT);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -41,7 +42,7 @@ public class EpollMultiplexingSingleThread {
 
     public void start() {
         initServer();
-        System.out.println("服务器启动了");
+        System.out.println("server start");
         try {
             //死循环
             while (true) {
@@ -75,6 +76,22 @@ public class EpollMultiplexingSingleThread {
                             // 因此，也就提出了 IO THREAD模型
                             // 所以，为什么提出IO THREADS... 再到Netty的IO线程模型
                         }
+                        /**
+                         * 疑问？？
+                         * 为什么这里没有写下面注释的代码块？
+                         *
+                         * 关于写事件，只要send-queue是空的，就一定会给你返回可以写的事件
+                         * 其实写事件取决于我们，什么时候写，要写什么，我们才要去关心send-queue是否为空
+                         * 如果一开始我们就注册了写事件，那么我们每次访问内核询问是否有事件到达的时候，就会导致一直有返回，最终死循环
+                         */
+//                        else if (key.isWritable()) {
+//                            try {
+//                                Thread.sleep(1000);
+//                            } catch (InterruptedException e) {
+//                                e.printStackTrace();
+//                            }
+//                            System.out.println("can write");
+//                        }
                     }
                 }
             }
@@ -95,6 +112,8 @@ public class EpollMultiplexingSingleThread {
              * epoll_ctl(fd3,EPOLL_CTL_ADD,fd7,EPOLLIN)
              */
             client.register(selector, SelectionKey.OP_READ, buffer);
+            // 为什么不注册写事件？那到底什么时候注册写事件
+//            client.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, buffer);
             System.out.println("-------------------------------------------");
             System.out.println("新客户端：" + client.getRemoteAddress());
             System.out.println("-------------------------------------------");
