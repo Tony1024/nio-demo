@@ -61,7 +61,7 @@ public class AboutWriteEvent {
                              */
 //                            key.cancel();
                             writeHandler(key);
-                            // 假设我们在这里，不写东西回给客户端，会发生什么事？一样会发生死循环，因为send-queue一直还是空的，需要我们往里面写东西，不为空了，才能消除这个事件
+                            // 假设我们在这里，不写东西回给客户端，会发生什么事？一样会发生死循环，因为send-queue一直还是空的
 //                            System.out.println("can write");
                         }
                     }
@@ -79,7 +79,6 @@ public class AboutWriteEvent {
         buffer.flip();
         while (buffer.hasRemaining()) {
             try {
-
                 client.write(buffer);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -91,12 +90,12 @@ public class AboutWriteEvent {
             e.printStackTrace();
         }
         buffer.clear();
-        key.cancel();
-        try {
-            client.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        key.cancel();
+//        try {
+//            client.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     public void acceptHandler(SelectionKey key) {
@@ -107,7 +106,7 @@ public class AboutWriteEvent {
             ByteBuffer buffer = ByteBuffer.allocate(8192);
             client.register(selector, SelectionKey.OP_READ, buffer);
             System.out.println("-------------------------------------------");
-            System.out.println("新客户端：" + client.getRemoteAddress());
+            System.out.println("Client connected:" + client.getRemoteAddress());
             System.out.println("-------------------------------------------");
         } catch (IOException e) {
             e.printStackTrace();

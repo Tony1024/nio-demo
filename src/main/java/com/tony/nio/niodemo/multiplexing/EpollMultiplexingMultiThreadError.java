@@ -9,15 +9,20 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * epoll多路复用器演示程序
  */
-public class EpollMultiplexingSingleThread {
+public class EpollMultiplexingMultiThreadError {
 
     private ServerSocketChannel server = null;
     private Selector selector = null;
     int port = 9090;
+
+    private AtomicInteger count = new AtomicInteger(1);
+    private LinkedBlockingQueue<SelectionKey> taskQueue = new LinkedBlockingQueue<SelectionKey>(1024);
 
     public void initServer() {
         try {
@@ -53,45 +58,48 @@ public class EpollMultiplexingSingleThread {
                  * 调用了epoll_wait() :
                  * When successful,epoll_wait() returns the number of file descriptors ready for the requested I/O
                  */
-                while (selector.select() > 0) {
-                    // 返回的有状态的fd集合
-                    Set<SelectionKey> selectionKeys = selector.selectedKeys();
-                    Iterator<SelectionKey> iter = selectionKeys.iterator();
-                    // 然而，最终还是得针对这些就绪的fd发起系统调用
-                    // 尽管是多路复用器，还得一个一个的去处理它们的R/W (没办法，这就是同步)
-                    // 但是对比之前NIO，NIO是需要对每一个fd发起系统调用，浪费资源，然而epoll这里仅仅调用了一次select()方法，就知道具体哪些fd可R/W了
-                    while (iter.hasNext()) {
-                        SelectionKey key = iter.next();
-                        // 不移除会重复循环处理
-                        iter.remove();
-                        if (key.isAcceptable()) {
-                            // 思考，accept接受连接且会返回新连接的fd对吧？那新的FD怎么办？
-                            // 答：当然是使用epoll_ctl把新的客户端fd注册到内核空间
-                            acceptHandler(key);
-                        } else if (key.isReadable()) {
-                            // 处理读写事件
-                            readHandler(key);
-                            // 思考：这个处理过程，是在当前线程进行的，假设这个方法阻塞了，会存在什么问题？
-                            // 答：IO被阻塞了，就算有新的读写事件来的，也因为你的这个阻塞导致大批量io事件阻塞
-                            // 因此，也就提出了 IO THREAD模型
-                            // 所以，为什么提出IO THREADS... 再到Netty的IO线程模型
+                while (true) {
+                    int num = selector.select();
+                    if (num > 0) {
+                        // 返回的有状态的fd集合
+                        Set<SelectionKey> selectionKeys = selector.selectedKeys();
+                        Iterator<SelectionKey> iter = selectionKeys.iterator();
+
+                        // 然而，最终还是得针对这些就绪的fd发起系统调用
+                        // 尽管是多路复用器，还得一个一个的去处理它们的R/W (没办法，这就是同步)
+                        // 但是对比之前NIO，NIO是需要对每一个fd发起系统调用，浪费资源，然而epoll这里仅仅调用了一次select()方法，就知道具体哪些fd可R/W了
+                        while (iter.hasNext()) {
+                            SelectionKey key = iter.next();
+                            // 不移除会重复循环处理
+                            iter.remove();
+                            if (key.isAcceptable()) {
+                                // 思考，accept接受连接且会返回新连接的fd对吧？那新的FD怎么办？
+                                // 答：当然是使用epoll_ctl把新的客户端fd注册到内核空间
+                                acceptHandler(key);
+                            } else if (key.isReadable()) {
+                                // 处理读写事件
+                            multiReadHandler(key); // 多线程处理?是否有问题? 引出使用队列，线程安全
+//                                addTask(key);
+//                                readHandler(key);
+                                // 思考：这个处理过程，是在当前线程进行的，假设这个方法阻塞了，会存在什么问题？
+                                // 答：IO被阻塞了，就算有新的读写事件来的，也因为你的这个阻塞导致大批量io事件阻塞
+                                // 因此，也就提出了 IO THREAD模型
+                                // 所以，为什么提出IO THREADS... 再到Netty的IO线程模型
+                            }
                         }
-                        /**
-                         * 疑问？？
-                         * 为什么这里没有写下面注释的代码？
-                         *
-                         * 关于写事件，只要send-queue是空的，就一定会给你返回可以写的事件
-                         * 其实写事件取决于我们，什么时候写，要写什么，我们才要去关心send-queue是否为空
-                         * 如果一开始我们就注册了写事件，那么我们每次访问内核询问是否有事件到达的时候，就会导致一直有返回，最终死循环
-                         */
-//                        else if (key.isWritable()) {
-//                            try {
-//                                Thread.sleep(1000);
-//                            } catch (InterruptedException e) {
-//                                e.printStackTrace();
-//                            }
-//                            System.out.println("can write");
-//                        }
+                    }
+
+                    if (!taskQueue.isEmpty()) {
+                        SelectionKey key = null;
+                        try {
+                            key = taskQueue.take();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        if (key.channel() instanceof SocketChannel) {
+                            readHandler(key);
+                        }
+
                     }
                 }
             }
@@ -122,7 +130,23 @@ public class EpollMultiplexingSingleThread {
         }
     }
 
+    public void addTask(SelectionKey key) {
+        try {
+            taskQueue.put(key);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void multiReadHandler(SelectionKey key) {
+        Thread thread = new Thread(() -> {
+            readHandler(key);
+        });
+        thread.start();
+    }
+
     public void readHandler(SelectionKey key) {
+        System.out.println("request count:" + count.getAndIncrement());
         SocketChannel client = (SocketChannel) key.channel();
         ByteBuffer buffer = (ByteBuffer) key.attachment();
         buffer.clear();
@@ -149,7 +173,7 @@ public class EpollMultiplexingSingleThread {
     }
 
     public static void main(String[] args) {
-        EpollMultiplexingSingleThread service = new EpollMultiplexingSingleThread();
+        EpollMultiplexingMultiThreadError service = new EpollMultiplexingMultiThreadError();
         service.start();
     }
 }

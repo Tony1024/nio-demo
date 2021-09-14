@@ -16,7 +16,6 @@ import java.util.Set;
 public class PollMultiplexingSingleThread {
 
     private ServerSocketChannel server = null;
-    // linux 多路复用器（select poll epoll kqueue） nginx  event{}
     private Selector selector = null;
     int port = 9090;
 
