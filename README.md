@@ -1,8 +1,11 @@
 # 九浅一深NIO
 
 ## 关于程序
+
 https://github.com/Tony1024/nio-demo
+
 spi选择不同的selector实现[EpollMultiplexingSingleThread.java]
+
 ```bash
 # epoll实现
 -Djava.nio.channels.spi.SelectorProvider=sun.nio.ch.EPollSelectorProvider
@@ -18,12 +21,9 @@ strace -ff -o [文件前缀] [java执行命令]
 
 2.分享一些实战技巧
 
+## IO基础
 
-## 大纲
-
-### IO基础
-
-#### 1.文件
+### 1.文件
 
 **Linux下，一切皆文件！**
 
@@ -41,7 +41,7 @@ p , pipe 管道文件
 s , socket
 ```
 
-#### 2.文件描述符
+### 2.文件描述符
 
 定义
 
@@ -49,7 +49,7 @@ s , socket
 >
 > 通俗一点来说就是：描述了打开这个文件的具体信息和指针、偏移量(seek)
 
-任何程序都有0 ,1,2三个文件描述符 : [0-标准输入, 1-标准输出, 2-报错输出]
+任何程序都有0,1,2三个文件描述符 : [0-标准输入, 1-标准输出, 2-报错输出]
 
 通过以下实验, 便于理解文件描述符
 
@@ -62,7 +62,7 @@ read x 0<& 8
 # 新开一个bash，对同一个文件进行读取，进行上述的操作，再次观察文件描述符的偏移量
 ```
 
-#### 3.PageCache
+### 3.PageCache
 
 内核页缓存，也叫内核缓冲区
 
@@ -70,9 +70,9 @@ read x 0<& 8
 
 int 0x80系统调用，中断，是cpu的指令 ，它的值是128: 1000 0000，是放在cpu的寄存器里的，与中断向量表对应，其实128这个值可以找到代表它的一个回调函数，从而发起调用
 
-#### 4.Linux系统小知识
+### 4.Linux系统小知识
 
-##### 重定向的理解
+#### 重定向的理解
 
 ```bash
 # 展示了一堆文件，其实是表示这个ls程序的标准输出是指向了屏幕
@@ -85,7 +85,7 @@ ls ./ /notexist  1> out.txt 2> error.txt
 cat 0< xxx.txt 1> cat.out 
 ```
 
-##### 管道
+#### 管道
 
 ```bash
 #head tail命令的实践
@@ -97,7 +97,7 @@ head -n xxx.txt | tail -1
 
 从管道引出父子进程的概念
 
-##### 父子进程
+#### 父子进程
 
 ```bash
 # 查看进程树
@@ -131,38 +131,38 @@ echo $BASHPID | cat
 
 通过上面的这个指令，学会去观察他们的fd情况，以及父子进程情况，还有管道左边和管道右边的的输入输出关系
 
-#### 5.实用命令介绍
+### 5.实用命令介绍
 
-##### 1.lsof
+#### 1.lsof
 
 > lsof -p [pid] 可以显示该进程打开了哪些文件
 >
 > lsof -op [pid] 这个命令可以查看该进程下文件描述符的情况以及偏移量（OFFSET）
 
-##### 2.stat
+#### 2.stat
 
 > stat [文件名]  可以查看该文件的Inode号
 
-##### 3./proc
+#### 3./proc
 
 > 在/proc下可以查看linux内核的变量
 >
 > 在/proc/{pid}/fd目录可以查看到某个进程的文件描述符情况
 
-##### 4.pcstat
+#### 4.pcstat
 
 > pcstat [文件名] 可以查看某个文件在PageCache的使用情况
 
-##### 5.nc
+#### 5.nc
 
 > nc [ip] [port] 可以连接某个服务端
 > nc -l [ip] [port]
 
-##### 6.exec
+#### 6.exec
 
 > exec [fd文件描述符]< [文件名] 令某个文件描述符读取某个文件
 
-##### 7.strace
+#### 7.strace
 
 用该命令可以查看一个java程序对系统调用的详细信息
 
@@ -178,7 +178,7 @@ echo $BASHPID | cat
 >
 > 用上面的命令可以查看一个java程序对系统调用的详细信息
 
-##### 8.man
+#### 8.man
 
 可以用man这个指令查看很多linux里的函数以及其详细信息
 
@@ -186,21 +186,21 @@ echo $BASHPID | cat
 >
 > man tcp; man 7 ip; man bash; man man; man 2 socket; man 2 bind; man 2 listen; man 2 accept 等等
 
-##### 9.route
+#### 9.route
 
 > route -n 查看路由表
 >
 > route add -host 192.168.110.100 gw 192.168.150.1 添加一个路由条目
 
-##### 10.netstat
+#### 10.netstat
 
 > netstat -natp 查看网络状态
 
-##### 11.tcpdump
+#### 11.tcpdump
 
 > tcpdump -nn -i eth0 port 9090 查看eth0这个网卡接口下9090端口的抓包情况
 
-##### 12.ulimit
+#### 12.ulimit
 
 > 查看fd大小: ulimit -n
 >
@@ -214,11 +214,9 @@ echo $BASHPID | cat
 >
 > ulimit是用户级别的，不是系统级别的
 
+## 网络IO
 
-
-### 网络IO
-
-#### 1.Socket
+### 1.Socket
 
 IP:PORT
 
@@ -230,7 +228,7 @@ IP:PORT
 
 可以，只要保证四元组的唯一就可以连接上。那有上限么？只要内存足够大，百万连接都不是问题！
 
-#### 2.TCP连接
+### 2.TCP连接
 
 > 演示: Server.java
 >
@@ -248,7 +246,7 @@ TCP是面向连接的，可靠的传输协议
 
 其实在三次握手完成之后，客户端和服务端已经为这个连接开辟了资源（在内核角度，已经建立起连接）
 
-##### TCP/IP内核数据遗失
+#### TCP/IP内核数据遗失
 
 > 演示: Server.java
 >
@@ -258,7 +256,7 @@ TCP是面向连接的，可靠的传输协议
 >
 > 然后放开服务端，开始接受连接和数据，会发现客户端发送的数据存在丢失情况
 
-##### MTU
+#### MTU
 
 最大传输单元，单位:字节
 
@@ -275,19 +273,18 @@ ifconfig 可以查看网卡接口的MTU大小
 
 另外还有发现一个win（TCP窗口），客户端服务端的win都不一样，他们每次数据包交互的时候这个都会变，会根据各自的情况计算出各自的窗口大小并告诉对方，比方说某一个时刻server端win大小是100，那么client端收到之后就能知道server能接收100个数据包，这样客户端就可以发送100过去，解决了拥塞的情况，假如服务端win大小0，这时候client端就不会发送，客户端就阻塞在那里，避免了服务器拥塞的情况
 
-##### DMA的理解
+#### DMA的理解
 
 https://cloud.tencent.com/developer/article/1628161?from=14588
 
 
 
-### 3.网络IO演变过程
+## 网络IO演变
 
 
 
-### 4.多路复用器
+## IO线程模型演变
 
 
 
 ## 总结
-
