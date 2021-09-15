@@ -15,23 +15,15 @@ import java.util.concurrent.LinkedBlockingQueue;
  * @author gaoweidong
  * @date 2021/9/13
  */
-public class SelectorThread extends ThreadLocal<LinkedBlockingQueue<Channel>> implements Runnable {
+public class NioEventLoop extends ThreadLocal<LinkedBlockingQueue<Channel>> implements Runnable {
 
-    // 每线程对应一个selector，
-    // 多线程情况下，该主机，该程序的并发客户端被分配到多个selector上
-    // 注意，每个客户端，只绑定到其中一个selector
     Selector selector = null;
 
-    LinkedBlockingQueue<Channel> queue = get();
+    LinkedBlockingQueue<Channel> taskQueue = get();
 
-    SelectorThreadGroup group;
+    NioEventLoopGroup group;
 
-    @Override
-    protected LinkedBlockingQueue<Channel> initialValue() {
-        return new LinkedBlockingQueue<>();//你要丰富的是这里！  pool。。。
-    }
-
-    SelectorThread(SelectorThreadGroup group) {
+    NioEventLoop(NioEventLoopGroup group) {
         try {
             this.group = group;
             selector = Selector.open();
@@ -45,9 +37,10 @@ public class SelectorThread extends ThreadLocal<LinkedBlockingQueue<Channel>> im
         // Loop
         while (true) {
             try {
-                // 1,select()
-                int nums = selector.select();  // 阻塞  selector.wakeup()可以让select立马返回
-                // 2,处理selectedKeys
+                // 1.select()
+                // 阻塞, selector.wakeup()可以让select立马返回
+                int nums = selector.select();
+                // 2.处理selectedKeys
                 if (nums > 0) {
                     Set<SelectionKey> keys = selector.selectedKeys();
                     Iterator<SelectionKey> iter = keys.iterator();
@@ -56,16 +49,16 @@ public class SelectorThread extends ThreadLocal<LinkedBlockingQueue<Channel>> im
                         iter.remove();
                         // 复杂,接受客户端的过程（接收之后，要注册，多线程下，新的客户端，注册到那里呢？）
                         if (key.isAcceptable()) {
-                            acceptHandler(key);
+                            doAccept(key);
                         } else if (key.isReadable()) {
                             readHandler(key);
                         }
                     }
                 }
                 // 3,处理task
-                if (!queue.isEmpty()) {
+                if (!taskQueue.isEmpty()) {
                     //只有方法的逻辑，本地变量是线程隔离的
-                    Channel c = queue.take();
+                    Channel c = taskQueue.take();
                     if (c instanceof ServerSocketChannel) {
                         ServerSocketChannel server = (ServerSocketChannel) c;
                         server.register(selector, SelectionKey.OP_ACCEPT);
@@ -77,9 +70,7 @@ public class SelectorThread extends ThreadLocal<LinkedBlockingQueue<Channel>> im
                         System.out.println(Thread.currentThread().getName() + " register client: " + client.getRemoteAddress());
                     }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
+            } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
         }
@@ -102,9 +93,9 @@ public class SelectorThread extends ThreadLocal<LinkedBlockingQueue<Channel>> im
                     buffer.clear();
                 } else if (num == 0) {
                     break;
-                } else if (num < 0) {
+                } else {
                     //客户端断开了
-                    System.out.println("client: " + client.getRemoteAddress() + "closed......");
+                    System.out.println("client: " + client.getRemoteAddress() + " closed......");
                     key.cancel();
                     break;
                 }
@@ -114,20 +105,26 @@ public class SelectorThread extends ThreadLocal<LinkedBlockingQueue<Channel>> im
         }
     }
 
-    private void acceptHandler(SelectionKey key) {
-        System.out.println(Thread.currentThread().getName() + " acceptHandler......");
+    private void doAccept(SelectionKey key) {
+        System.out.println(Thread.currentThread().getName() + " :accept");
         ServerSocketChannel server = (ServerSocketChannel) key.channel();
         try {
             SocketChannel client = server.accept();
             client.configureBlocking(false);
-            //choose a selector  and  register!!
+            // choose a selector and register
             group.registerSelector(client);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void setWorker(SelectorThreadGroup stgWorker) {
-        this.group = stgWorker;
+    public void setWorker(NioEventLoopGroup worker) {
+        this.group = worker;
     }
+
+    @Override
+    protected LinkedBlockingQueue<Channel> initialValue() {
+        return new LinkedBlockingQueue<>();
+    }
+
 }

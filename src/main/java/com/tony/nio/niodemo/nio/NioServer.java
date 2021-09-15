@@ -21,12 +21,11 @@ public class NioServer {
         ServerSocketChannel ss = ServerSocketChannel.open();
         ss.bind(new InetSocketAddress(9090));
         // 重点 NONBLOCKING
-        // 接收客户端不阻塞
         ss.configureBlocking(false);
         while (true) {
             // 接受客户端的连接
             Thread.sleep(1000);
-            // 立马返回
+            // 接收客户端不阻塞
             SocketChannel client = ss.accept();
             if (client == null) {
                 Thread.sleep(3000);

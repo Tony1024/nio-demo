@@ -11,17 +11,19 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * 多路复用器demo
+ * 多路复用器select/poll
+ *
+ * @author gaoweidong
+ * @date 2021/9/15
  */
 public class PollMultiplexingSingleThread {
 
-    private ServerSocketChannel server = null;
     private Selector selector = null;
     int port = 9090;
 
     public void initServer() {
         try {
-            server = ServerSocketChannel.open();
+            ServerSocketChannel server = ServerSocketChannel.open();
             server.configureBlocking(false);
             server.bind(new InetSocketAddress(port));
             // 此时server处于listen状态，listen状态的文件描述符为fd4
