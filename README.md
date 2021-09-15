@@ -280,11 +280,15 @@ https://cloud.tencent.com/developer/article/1628161?from=14588
 
 
 ## 网络IO演变
-
+![image](https://github.com/Tony1024/nio-demo/blob/master/imgs/IO%E6%A8%A1%E5%9E%8B%E6%BC%94%E5%8F%98.png)
 
 
 ## IO线程模型演变
-
+### NIO线程模型演变
+![image](https://github.com/Tony1024/nio-demo/blob/master/imgs/NIO%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B%E6%BC%94%E5%8F%98.png)
+### Netty线程模型
+![image](https://github.com/Tony1024/nio-demo/blob/master/imgs/Netty%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B.png)
 
 
 ## 总结
+![image](https://github.com/Tony1024/nio-demo/blob/master/imgs/NIO.jpg)
