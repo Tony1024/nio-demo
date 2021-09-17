@@ -15,13 +15,12 @@ import java.util.Set;
  */
 public class EpollMultiplexingSingleThread {
 
-    private ServerSocketChannel server = null;
     private Selector selector = null;
     int port = 9090;
 
     public void initServer() {
         try {
-            server = ServerSocketChannel.open();
+            ServerSocketChannel server = ServerSocketChannel.open();
             server.configureBlocking(false);
             server.bind(new InetSocketAddress(port));
             // 在epoll模型下，open意味着：epoll_create -> fd3
