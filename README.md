@@ -1,20 +1,5 @@
 # 九浅一深NIO
 
-## 关于程序
-
-https://github.com/Tony1024/nio-demo
-
-spi选择不同的selector实现[EpollMultiplexingSingleThread.java]
-
-```bash
-# epoll实现
--Djava.nio.channels.spi.SelectorProvider=sun.nio.ch.EPollSelectorProvider
-# poll实现
--Djava.nio.channels.spi.SelectorProvider=sun.nio.ch.PollSelectorProvider
-# 查看系统调用
-strace -ff -o [文件前缀] [java执行命令]
-```
-
 ## 目标
 
 1.带大家理解网络IO、NIO、多路复用器
@@ -292,3 +277,18 @@ https://cloud.tencent.com/developer/article/1628161?from=14588
 
 ## 总结
 ![image](https://github.com/Tony1024/nio-demo/blob/master/imgs/NIO.jpg)
+
+## 关于程序
+
+https://github.com/Tony1024/nio-demo
+
+spi选择不同的selector实现[EpollMultiplexingSingleThread.java]
+
+```bash
+# epoll实现
+-Djava.nio.channels.spi.SelectorProvider=sun.nio.ch.EPollSelectorProvider
+# poll实现
+-Djava.nio.channels.spi.SelectorProvider=sun.nio.ch.PollSelectorProvider
+# 查看系统调用
+strace -ff -o [文件前缀] [java执行命令]
+```
